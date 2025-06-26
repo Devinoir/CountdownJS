@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beautiful Countdown Timer</title>
+    <!-- Link to external CSS for styling -->
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="timers-list">
+        <!-- Timers will be rendered here -->
+        <button id="add-timer-btn" style="margin:2rem auto 0 auto;display:block;width:220px;height:2.5rem;">+ Add Timer</button>
+    </div>
+    <!-- Edit Timer Modal -->
+    <div id="edit-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:2000;align-items:center;justify-content:center;">
+        <div id="edit-modal-content">
+            <h2>Edit Timer</h2>
+            <label for="edit-timer-name">Timer Name:</label>
+            <input id="edit-timer-name" type="text" />
+            <label for="edit-date-picker">End Date & Time:</label>
+            <input type="datetime-local" id="edit-date-picker" />
+            <div class="modal-btn-row">
+                <button id="save-edit-btn">Save</button>
+                <button id="cancel-edit-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <!-- Link to compiled JS (from countdown.ts) -->
+    <script src="countdown.js"></script>
+    <script src="multi-timer.js"></script>
+    <script src="color-customizer.js"></script>
+</body>
+</html>

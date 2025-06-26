@@ -1,0 +1,351 @@
+/*
+ * styles.css
+ * Beautiful, responsive styling for the Countdown Timer
+ * Comments included for learners
+ */
+
+body {
+    background: linear-gradient(120deg, rgb(177, 255, 255) 0%, rgb(97, 207, 214) 100%);
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    background: #fff;
+    padding: 2rem 2.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    z-index: 1;
+    position: relative;
+}
+
+h1 {
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+label {
+    font-size: 1rem;
+    color: #555;
+}
+
+#date-picker {
+    margin: 1rem 0;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+#start-btn {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: #66a6ff;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 1.5rem;
+}
+
+#start-btn:hover {
+    background: #89f7fe;
+    color: #333;
+}
+
+.countdown {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    font-size: 1.2rem;
+    color: #222;
+    background: #f0f8ff;
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(102, 166, 255, 0.1);
+    gap: 1.5rem;
+}
+
+.countdown-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.countdown-unit span {
+    font-weight: bold;
+    font-size: 2.2rem;
+    color: #66a6ff;
+    margin-bottom: 0.2rem;
+}
+
+.countdown-unit .label {
+    font-size: 1rem;
+    color: #555;
+    margin-top: 0.2rem;
+}
+
+#theme-btn {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    background: #fff;
+    color: #222;
+    border: none;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.7rem;
+    box-shadow: 0 2px 8px rgba(102, 166, 255, 0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+#theme-btn:hover {
+    background: #66a6ff;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(102, 166, 255, 0.25);
+}
+
+#options-btn {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  z-index: 3000; /* ensure always on top */
+  background: #fff;
+  color: #222;
+  border: none;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.7rem;
+  box-shadow: 0 2px 8px rgba(102, 166, 255, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  opacity: 1 !important; /* always visible */
+  pointer-events: auto !important;
+}
+
+#options-btn:hover {
+  background: #66a6ff;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(102, 166, 255, 0.25);
+}
+
+#options-menu {
+    position: fixed;
+    top: 5.5rem;
+    left: 2rem;
+    z-index: 1100;
+    background: #fff;
+    color: #222;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(102, 166, 255, 0.18);
+    padding: 1.5rem 2rem 1rem 2rem;
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 220px;
+}
+
+#options-menu.open {
+    display: flex;
+}
+
+#options-menu h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+#options-menu label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1rem;
+    color: #555;
+    gap: 1rem;
+}
+
+#options-menu input[type="color"] {
+    border: none;
+    width: 2.2rem;
+    height: 2.2rem;
+    background: none;
+    cursor: pointer;
+}
+
+#options-menu button {
+    margin-top: 0.5rem;
+    align-self: flex-end;
+    padding: 0.3rem 1.2rem;
+    border-radius: 0.5rem;
+    border: none;
+    background: #66a6ff;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#options-menu button:hover {
+    background: #89f7fe;
+    color: #333;
+}
+
+#timers-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+#add-timer-btn {
+    display: block;
+    margin: 2rem auto 0 auto;
+    width: 220px;
+    height: 2.5rem;
+    background: #66a6ff;
+    color: #fff;
+    border: none;
+    border-radius: 0.7rem;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(102, 166, 255, 0.18);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    position: static;
+    z-index: auto;
+}
+
+#add-timer-btn:hover {
+    background: #89f7fe;
+    color: #333;
+}
+
+/* Edit Modal Styles */
+#edit-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(30, 42, 70, 0.35);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInBg 0.3s;
+}
+#edit-modal.open {
+  display: flex;
+}
+#edit-modal-content {
+  background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  border-radius: 1.7rem;
+  box-shadow: 0 12px 40px 0 rgba(31,38,135,0.22);
+  min-width: 320px;
+  max-width: 95vw;
+  position: relative;
+  animation: popIn 0.25s;
+}
+#edit-modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.5rem;
+  color: #3b3b5c;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+#edit-modal-content label {
+  font-size: 1.05rem;
+  color: #5a5a7a;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+#edit-modal-content input[type="text"],
+#edit-modal-content input[type="datetime-local"] {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 0.7rem;
+  border: 1.5px solid #bfcfff;
+  font-size: 1.08rem;
+  margin-bottom: 1.2rem;
+  background: #f4f7ff;
+  color: #2a2a3a;
+  transition: border 0.2s;
+  box-sizing: border-box;
+}
+#edit-modal-content input:focus {
+  border: 1.5px solid #66a6ff;
+  outline: none;
+}
+#edit-modal-content .modal-btn-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.2rem;
+  margin-top: 1.2rem;
+}
+#edit-modal-content button {
+  flex: 1;
+  padding: 0.6rem 0;
+  border-radius: 0.7rem;
+  border: none;
+  font-size: 1.08rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  box-shadow: 0 2px 8px rgba(102,166,255,0.08);
+}
+#save-edit-btn {
+  background: linear-gradient(90deg, #66a6ff 0%, #89f7fe 100%);
+  color: #fff;
+}
+#save-edit-btn:hover {
+  background: linear-gradient(90deg, #89f7fe 0%, #66a6ff 100%);
+  color: #222;
+}
+#cancel-edit-btn {
+  background: #e0e7ff;
+  color: #3b3b5c;
+}
+#cancel-edit-btn:hover {
+  background: #c7d2fe;
+  color: #222;
+}
+@keyframes fadeInBg {
+  from { background: rgba(30,42,70,0); }
+  to { background: rgba(30,42,70,0.35); }
+}
+@keyframes popIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@media (max-width: 500px) {
+    .container {
+        padding: 1rem;
+    }
+    .countdown {
+        flex-direction: column;
+        gap: 0.5rem;
+        font-size: 1rem;
+    }
+  #edit-modal-content {
+    padding: 1.2rem 0.7rem 1rem 0.7rem;
+    min-width: 0;
+  }
+}
