@@ -1,48 +1,54 @@
 // multi-timer.js
 // Handles multiple timers, localStorage, rendering, editing, and countdowns for each timer
 
-let timers = [];
-let editIndex = null;
-let intervalHandles = [];
+let multiTimers = [];
+let multiEditIndex = null;
+let multiIntervalHandles = [];
 
-function loadTimers() {
+function loadMultiTimers() {
     const saved = localStorage.getItem('timers');
     if (saved) {
         try {
-            timers = JSON.parse(saved);
+            multiTimers = JSON.parse(saved);
         } catch {
-            timers = [];
+            multiTimers = [];
         }
     }
 }
 
-function saveTimers() {
-    localStorage.setItem('timers', JSON.stringify(timers));
+function saveMultiTimers() {
+    localStorage.setItem('timers', JSON.stringify(multiTimers));
 }
 
-function renderTimers() {
+async function renderMultiTimers() {
     const list = document.getElementById('timers-list');
-    const addBtn = document.getElementById('add-timer-btn');
     list.innerHTML = '';
-    timers.forEach((timer, idx) => {
+    await Promise.all(multiTimers.map(async (timer, idx) => {
+        const html = await fetch('timer-item.html').then(r => r.text());
+        let timerHtml = html
+            .replace(/__IDX__/g, idx)
+            .replace(/__NAME__/g, timer.name)
+            .replace(/__END__/g, timer.end ? new Date(timer.end).toLocaleString() : '');
         const timerDiv = document.createElement('div');
         timerDiv.className = 'container timer-item';
         timerDiv.style.position = 'relative';
         timerDiv.style.marginBottom = '2rem';
-        timerDiv.innerHTML = `
-            <button class="edit-timer-btn" data-idx="${idx}" title="Edit" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;opacity:0;transition:opacity 0.2s;">✏️</button>
-            <button class="delete-timer-btn" data-idx="${idx}" title="Delete" style="position:absolute;top:1rem;left:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;opacity:0;transition:opacity 0.2s;">🗑️</button>
-            <h1 style="margin-bottom:0.5rem;text-align:center;">${timer.name}</h1>
-            <div style="margin-bottom:1rem;font-size:1rem;color:#888;text-align:center;">Ends at: <span class="timer-end">${timer.end ? new Date(timer.end).toLocaleString() : ''}</span></div>
-            <div class="countdown" id="timer-countdown-${idx}">
-                <div class="countdown-unit"><span class="days">00</span><div class="label">days</div></div>
-                <div class="countdown-unit"><span class="hours">00</span><div class="label">hours</div></div>
-                <div class="countdown-unit"><span class="minutes">00</span><div class="label">minutes</div></div>
-                <div class="countdown-unit"><span class="seconds">00</span><div class="label">seconds</div></div>
-            </div>
-        `;
+        timerDiv.innerHTML = timerHtml;
         list.appendChild(timerDiv);
-    });
+    }));
+    // Create a new Add Timer button each time
+    const addBtn = document.createElement('button');
+    addBtn.id = 'add-timer-btn';
+    addBtn.textContent = '+ Add Timer';
+    addBtn.style.margin = '2rem auto 0 auto';
+    addBtn.style.display = 'block';
+    addBtn.style.width = '220px';
+    addBtn.style.height = '2.5rem';
+    addBtn.onclick = function() {
+        multiTimers.push({ name: 'Countdown Timer', end: '' });
+        saveMultiTimers();
+        renderMultiTimers();
+    };
     list.appendChild(addBtn);
     setTimeout(() => {
         document.querySelectorAll('.timer-item').forEach(item => {
@@ -54,67 +60,45 @@ function renderTimers() {
             });
         });
     }, 0);
-    attachTimerEventListeners();
-    setupAllCountdowns();
+    attachMultiTimerEventListeners();
+    setupAllMultiCountdowns();
 }
 
-function attachTimerEventListeners() {
+function attachMultiTimerEventListeners() {
     document.querySelectorAll('.edit-timer-btn').forEach(btn => {
         btn.onclick = function() {
-            editIndex = parseInt(this.dataset.idx);
-            openEditModal(editIndex);
+            multiEditIndex = parseInt(this.dataset.idx);
+            openMultiEditModal(multiEditIndex);
         };
     });
     document.querySelectorAll('.delete-timer-btn').forEach(btn => {
         btn.onclick = function() {
             const idx = parseInt(this.dataset.idx);
-            timers.splice(idx, 1);
-            clearInterval(intervalHandles[idx]);
-            intervalHandles.splice(idx, 1);
-            saveTimers();
-            renderTimers();
+            multiTimers.splice(idx, 1);
+            clearInterval(multiIntervalHandles[idx]);
+            multiIntervalHandles.splice(idx, 1);
+            saveMultiTimers();
+            renderMultiTimers();
         };
     });
 }
 
-function openEditModal(idx) {
+function openMultiEditModal(idx) {
     const modal = document.getElementById('edit-modal');
     const nameInput = document.getElementById('edit-timer-name');
     const dateInput = document.getElementById('edit-date-picker');
-    nameInput.value = timers[idx].name;
-    dateInput.value = timers[idx].end ? new Date(timers[idx].end).toISOString().slice(0,16) : '';
+    nameInput.value = multiTimers[idx].name;
+    dateInput.value = multiTimers[idx].end ? new Date(multiTimers[idx].end).toISOString().slice(0,16) : '';
     modal.style.display = 'flex';
 }
 
-function closeEditModal() {
+function closeMultiEditModal() {
     document.getElementById('edit-modal').style.display = 'none';
 }
 
-document.getElementById('add-timer-btn').onclick = function() {
-    timers.push({ name: 'Countdown Timer', end: '' });
-    saveTimers();
-    renderTimers();
-};
-
-document.getElementById('save-edit-btn').onclick = function() {
-    if (editIndex !== null) {
-        timers[editIndex].name = document.getElementById('edit-timer-name').value || 'Countdown Timer';
-        timers[editIndex].end = document.getElementById('edit-date-picker').value;
-        saveTimers();
-        renderTimers();
-        setupCountdownForTimer(editIndex);
-        closeEditModal();
-    }
-};
-document.getElementById('cancel-edit-btn').onclick = closeEditModal;
-
-document.getElementById('edit-modal').onclick = function(e) {
-    if (e.target === this) closeEditModal();
-};
-
-function setupCountdownForTimer(idx) {
-    if (intervalHandles[idx]) clearInterval(intervalHandles[idx]);
-    const timer = timers[idx];
+function setupCountdownForMultiTimer(idx) {
+    if (multiIntervalHandles[idx]) clearInterval(multiIntervalHandles[idx]);
+    const timer = multiTimers[idx];
     const countdownDiv = document.getElementById(`timer-countdown-${idx}`);
     function update() {
         if (!timer.end) return;
@@ -132,15 +116,43 @@ function setupCountdownForTimer(idx) {
         countdownDiv.querySelector('.seconds').textContent = String(seconds).padStart(2, '0');
     }
     update();
-    intervalHandles[idx] = setInterval(update, 1000);
+    multiIntervalHandles[idx] = setInterval(update, 1000);
 }
 
-function setupAllCountdowns() {
-    timers.forEach((_, idx) => setupCountdownForTimer(idx));
+function setupAllMultiCountdowns() {
+    multiTimers.forEach((_, idx) => setupCountdownForMultiTimer(idx));
 }
 
-window.addEventListener('DOMContentLoaded', function() {
-    loadTimers();
-    renderTimers();
-    setupAllCountdowns();
+window.addEventListener('DOMContentLoaded', async function() {
+    // Load and inject the edit modal if not present
+    if (!document.getElementById('edit-modal')) {
+        const editModalHtml = await fetch('edit-modal.html').then(r => r.text());
+        const tempEdit = document.createElement('div');
+        tempEdit.innerHTML = editModalHtml;
+        document.body.appendChild(tempEdit.firstElementChild);
+    }
+    loadMultiTimers();
+    await renderMultiTimers();
+    setupAllMultiCountdowns();
+
+    document.getElementById('add-timer-btn').onclick = function() {
+        multiTimers.push({ name: 'Countdown Timer', end: '' });
+        saveMultiTimers();
+        renderMultiTimers();
+    };
+
+    document.getElementById('save-edit-btn').onclick = function() {
+        if (multiEditIndex !== null) {
+            multiTimers[multiEditIndex].name = document.getElementById('edit-timer-name').value || 'Countdown Timer';
+            multiTimers[multiEditIndex].end = document.getElementById('edit-date-picker').value;
+            saveMultiTimers();
+            renderMultiTimers();
+            setupCountdownForMultiTimer(multiEditIndex);
+            closeMultiEditModal();
+        }
+    };
+    document.getElementById('cancel-edit-btn').onclick = closeMultiEditModal;
+    document.getElementById('edit-modal').onclick = function(e) {
+        if (e.target === this) closeMultiEditModal();
+    };
 });

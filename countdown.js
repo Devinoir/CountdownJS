@@ -129,8 +129,10 @@ function setupCountdown() {
     });
 }
 
-// MULTI-TIMER LOGIC
-let timers = [];
+// Only define timers if not already defined (avoid global conflict)
+if (typeof timers === 'undefined') {
+    var timers = [];
+}
 let editIndex = null;
 let intervalHandles = [];
 
@@ -152,44 +154,50 @@ function saveTimers() {
 }
 
 function renderTimers() {
-    const list = document.getElementById('timers-list');
-    // Remove all children except the add button
-    const addBtn = document.getElementById('add-timer-btn');
-    list.innerHTML = '';
-    timers.forEach((timer, idx) => {
-        const timerDiv = document.createElement('div');
-        timerDiv.className = 'container timer-item'; // add timer-item class for hover effect
-        timerDiv.style.position = 'relative';
-        timerDiv.style.marginBottom = '2rem';
-        timerDiv.innerHTML = `
-            <button class="edit-timer-btn" data-idx="${idx}" title="Edit" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;opacity:0;transition:opacity 0.2s;">✏️</button>
-            <button class="delete-timer-btn" data-idx="${idx}" title="Delete" style="position:absolute;top:1rem;left:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;opacity:0;transition:opacity 0.2s;">🗑️</button>
-            <h1 style="margin-bottom:0.5rem;text-align:center;">${timer.name}</h1>
-            <div style="margin-bottom:1rem;font-size:1rem;color:#888;text-align:center;">Ends at: <span class="timer-end">${timer.end ? new Date(timer.end).toLocaleString() : ''}</span></div>
-            <div class="countdown" id="timer-countdown-${idx}">
-                <div class="countdown-unit"><span class="days">00</span><div class="label">days</div></div>
-                <div class="countdown-unit"><span class="hours">00</span><div class="label">hours</div></div>
-                <div class="countdown-unit"><span class="minutes">00</span><div class="label">minutes</div></div>
-                <div class="countdown-unit"><span class="seconds">00</span><div class="label">seconds</div></div>
-            </div>
-        `;
-        list.appendChild(timerDiv);
+    return new Promise(async (resolve) => {
+        const list = document.getElementById('timers-list');
+        list.innerHTML = '';
+        await Promise.all(timers.map(async (timer, idx) => {
+            const html = await fetch('timer-item.html').then(r => r.text());
+            let timerHtml = html
+                .replace(/__IDX__/g, idx)
+                .replace(/__NAME__/g, timer.name)
+                .replace(/__END__/g, timer.end ? new Date(timer.end).toLocaleString() : '');
+            const timerDiv = document.createElement('div');
+            timerDiv.className = 'container timer-item';
+            timerDiv.style.position = 'relative';
+            timerDiv.style.marginBottom = '2rem';
+            timerDiv.innerHTML = timerHtml;
+            list.appendChild(timerDiv);
+        }));
+        // Create a new Add Timer button each time
+        const addBtn = document.createElement('button');
+        addBtn.id = 'add-timer-btn';
+        addBtn.textContent = '+ Add Timer';
+        addBtn.style.margin = '2rem auto 0 auto';
+        addBtn.style.display = 'block';
+        addBtn.style.width = '220px';
+        addBtn.style.height = '2.5rem';
+        addBtn.onclick = function() {
+            timers.push({ name: 'Countdown Timer', end: '' });
+            saveTimers();
+            renderTimers();
+        };
+        list.appendChild(addBtn);
+        setTimeout(() => {
+            document.querySelectorAll('.timer-item').forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    this.querySelectorAll('.edit-timer-btn, .delete-timer-btn').forEach(btn => btn.style.opacity = '1');
+                });
+                item.addEventListener('mouseleave', function() {
+                    this.querySelectorAll('.edit-timer-btn, .delete-timer-btn').forEach(btn => btn.style.opacity = '0');
+                });
+            });
+        }, 0);
+        attachTimerEventListeners();
+        setupAllCountdowns();
+        resolve();
     });
-    // Always append the add button as the last child
-    list.appendChild(addBtn);
-    // Add hover effect for edit/delete buttons
-    setTimeout(() => {
-        document.querySelectorAll('.timer-item').forEach(item => {
-            item.addEventListener('mouseenter', function() {
-                this.querySelectorAll('.edit-timer-btn, .delete-timer-btn').forEach(btn => btn.style.opacity = '1');
-            });
-            item.addEventListener('mouseleave', function() {
-                this.querySelectorAll('.edit-timer-btn, .delete-timer-btn').forEach(btn => btn.style.opacity = '0');
-            });
-        });
-    }, 0);
-    attachTimerEventListeners();
-    setupAllCountdowns(); // Ensure countdowns are set up after rendering
 }
 
 function attachTimerEventListeners() {
@@ -224,27 +232,122 @@ function closeEditModal() {
     document.getElementById('edit-modal').style.display = 'none';
 }
 
-document.getElementById('add-timer-btn').onclick = function() {
-    timers.push({ name: 'Countdown Timer', end: '' });
-    saveTimers(); // Save after add
-    renderTimers();
-};
+window.addEventListener('DOMContentLoaded', async function() {
+    // Load and inject the edit modal
+    const editModalHtml = await fetch('edit-modal.html').then(r => r.text());
+    const tempEdit = document.createElement('div');
+    tempEdit.innerHTML = editModalHtml;
+    document.body.appendChild(tempEdit.firstElementChild);
 
-document.getElementById('save-edit-btn').onclick = function() {
-    if (editIndex !== null) {
-        timers[editIndex].name = document.getElementById('edit-timer-name').value || 'Countdown Timer';
-        timers[editIndex].end = document.getElementById('edit-date-picker').value;
-        saveTimers(); // Save after edit
-        renderTimers();
-        setupCountdownForTimer(editIndex);
-        closeEditModal();
+    // Always add the color settings button
+    const optionsBtn = document.createElement('button');
+    optionsBtn.id = 'options-btn';
+    optionsBtn.title = 'Customize Colors';
+    optionsBtn.innerHTML = '⚙️';
+    optionsBtn.setAttribute('aria-label', 'Customize Colors');
+    document.body.appendChild(optionsBtn);
+
+    // Load the options menu HTML from external file
+    fetch('options-menu.html')
+        .then(response => response.text())
+        .then(html => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const menu = tempDiv.firstElementChild;
+            document.body.appendChild(menu);
+
+            // Show/hide menu
+            optionsBtn.addEventListener('click', () => {
+                menu.classList.toggle('open');
+            });
+            menu.querySelector('#close-options').addEventListener('click', () => {
+                menu.classList.remove('open');
+            });
+
+            // Load saved colors and apply them immediately
+            const saved = JSON.parse(localStorage.getItem('customColors') || '{}');
+            if (saved.bg) document.getElementById('color-bg').value = saved.bg;
+            if (saved.container) document.getElementById('color-container').value = saved.container;
+            if (saved.numbers) document.getElementById('color-numbers').value = saved.numbers;
+            if (saved.labels) document.getElementById('color-labels').value = saved.labels;
+            if (saved.countdownBg) document.getElementById('color-countdown-bg').value = saved.countdownBg;
+            if (saved.title) document.getElementById('color-title').value = saved.title;
+            applyCustomColors(saved); // Always apply colors on load
+
+            // Listen for color changes
+            menu.querySelectorAll('input[type=color]').forEach(input => {
+                input.addEventListener('input', () => {
+                    const colors = {
+                        bg: document.getElementById('color-bg').value,
+                        container: document.getElementById('color-container').value,
+                        numbers: document.getElementById('color-numbers').value,
+                        labels: document.getElementById('color-labels').value,
+                        countdownBg: document.getElementById('color-countdown-bg').value,
+                        title: document.getElementById('color-title').value
+                    };
+                    localStorage.setItem('customColors', JSON.stringify(colors));
+                    applyCustomColors(colors);
+                });
+            });
+
+            document.getElementById('reset-colors').onclick = function() {
+                const defaultColors = {
+                    bg: '#89f7fe',
+                    container: '#fff',
+                    numbers: '#66a6ff',
+                    labels: '#555555',
+                    countdownBg: '#f0f8ff',
+                    title: '#333'
+                };
+                localStorage.removeItem('customColors');
+                document.getElementById('color-bg').value = defaultColors.bg;
+                document.getElementById('color-container').value = defaultColors.container;
+                document.getElementById('color-numbers').value = defaultColors.numbers;
+                document.getElementById('color-labels').value = defaultColors.labels;
+                document.getElementById('color-countdown-bg').value = defaultColors.countdownBg;
+                document.getElementById('color-title').value = defaultColors.title;
+                applyCustomColors(defaultColors);
+            };
+        });
+
+    loadTimers(); // Load timers from storage
+    await renderTimers();
+    setupAllCountdowns();
+
+    // Defensive: check for null before setting onclick
+    const addBtn = document.getElementById('add-timer-btn');
+    if (addBtn) {
+        addBtn.onclick = function() {
+            timers.push({ name: 'Countdown Timer', end: '' });
+            saveTimers(); // Save after add
+            renderTimers();
+        };
     }
-};
-document.getElementById('cancel-edit-btn').onclick = closeEditModal;
 
-document.getElementById('edit-modal').onclick = function(e) {
-    if (e.target === this) closeEditModal();
-};
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    if (saveEditBtn) {
+        saveEditBtn.onclick = function() {
+            if (editIndex !== null) {
+                timers[editIndex].name = document.getElementById('edit-timer-name').value || 'Countdown Timer';
+                timers[editIndex].end = document.getElementById('edit-date-picker').value;
+                saveTimers(); // Save after edit
+                renderTimers();
+                setupCountdownForTimer(editIndex);
+                closeEditModal();
+            }
+        };
+    }
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    if (cancelEditBtn) {
+        cancelEditBtn.onclick = closeEditModal;
+    }
+    const editModal = document.getElementById('edit-modal');
+    if (editModal) {
+        editModal.onclick = function(e) {
+            if (e.target === this) closeEditModal();
+        };
+    }
+});
 
 function setupCountdownForTimer(idx) {
     if (intervalHandles[idx]) clearInterval(intervalHandles[idx]);
@@ -275,7 +378,13 @@ function setupAllCountdowns() {
 }
 
 // Run setup when the DOM is loaded
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', async function() {
+    // Load and inject the edit modal
+    const editModalHtml = await fetch('edit-modal.html').then(r => r.text());
+    const tempEdit = document.createElement('div');
+    tempEdit.innerHTML = editModalHtml;
+    document.body.appendChild(tempEdit.firstElementChild);
+
     // Always add the color settings button
     const optionsBtn = document.createElement('button');
     optionsBtn.id = 'options-btn';
@@ -284,90 +393,106 @@ window.addEventListener('DOMContentLoaded', function() {
     optionsBtn.setAttribute('aria-label', 'Customize Colors');
     document.body.appendChild(optionsBtn);
 
-    // Create the options menu
-    const menu = document.createElement('div');
-    menu.id = 'options-menu';
-    menu.innerHTML = `
-        <h2>Customize Colors</h2>
-        <label>Background:
-            <input type="color" id="color-bg" value="#89f7fe">
-        </label>
-        <label>Timer Window:
-            <input type="color" id="color-container" value="#ffffff">
-        </label>
-        <label>Countdown Numbers:
-            <input type="color" id="color-numbers" value="#66a6ff">
-        </label>
-        <label>Countdown Labels:
-            <input type="color" id="color-labels" value="#555555">
-        </label>
-        <label>Countdown Background:
-            <input type="color" id="color-countdown-bg" value="#f0f8ff">
-        </label>
-        <label>Title Text:
-            <input type="color" id="color-title" value="#333333">
-        </label>
-        <button id="close-options">Close</button>
-        <button id="reset-colors" style="margin-top:0.5rem;align-self:flex-end;padding:0.3rem 1.2rem;border-radius:0.5rem;border:none;background:#e0e7ff;color:#3b3b5c;font-size:1rem;cursor:pointer;transition:background 0.2s;">Reset Colors</button>
-    `;
-    document.body.appendChild(menu);
+    // Load the options menu HTML from external file
+    fetch('options-menu.html')
+        .then(response => response.text())
+        .then(html => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const menu = tempDiv.firstElementChild;
+            document.body.appendChild(menu);
 
-    // Show/hide menu
-    optionsBtn.addEventListener('click', () => {
-        menu.classList.toggle('open');
-    });
-    menu.querySelector('#close-options').addEventListener('click', () => {
-        menu.classList.remove('open');
-    });
+            // Show/hide menu
+            optionsBtn.addEventListener('click', () => {
+                menu.classList.toggle('open');
+            });
+            menu.querySelector('#close-options').addEventListener('click', () => {
+                menu.classList.remove('open');
+            });
 
-    // Load saved colors and apply them immediately
-    const saved = JSON.parse(localStorage.getItem('customColors') || '{}');
-    if (saved.bg) document.getElementById('color-bg').value = saved.bg;
-    if (saved.container) document.getElementById('color-container').value = saved.container;
-    if (saved.numbers) document.getElementById('color-numbers').value = saved.numbers;
-    if (saved.labels) document.getElementById('color-labels').value = saved.labels;
-    if (saved.countdownBg) document.getElementById('color-countdown-bg').value = saved.countdownBg;
-    if (saved.title) document.getElementById('color-title').value = saved.title;
-    applyCustomColors(saved); // Always apply colors on load
+            // Load saved colors and apply them immediately
+            const saved = JSON.parse(localStorage.getItem('customColors') || '{}');
+            if (saved.bg) document.getElementById('color-bg').value = saved.bg;
+            if (saved.container) document.getElementById('color-container').value = saved.container;
+            if (saved.numbers) document.getElementById('color-numbers').value = saved.numbers;
+            if (saved.labels) document.getElementById('color-labels').value = saved.labels;
+            if (saved.countdownBg) document.getElementById('color-countdown-bg').value = saved.countdownBg;
+            if (saved.title) document.getElementById('color-title').value = saved.title;
+            applyCustomColors(saved); // Always apply colors on load
 
-    // Listen for color changes
-    menu.querySelectorAll('input[type=color]').forEach(input => {
-        input.addEventListener('input', () => {
-            const colors = {
-                bg: document.getElementById('color-bg').value,
-                container: document.getElementById('color-container').value,
-                numbers: document.getElementById('color-numbers').value,
-                labels: document.getElementById('color-labels').value,
-                countdownBg: document.getElementById('color-countdown-bg').value,
-                title: document.getElementById('color-title').value
+            // Listen for color changes
+            menu.querySelectorAll('input[type=color]').forEach(input => {
+                input.addEventListener('input', () => {
+                    const colors = {
+                        bg: document.getElementById('color-bg').value,
+                        container: document.getElementById('color-container').value,
+                        numbers: document.getElementById('color-numbers').value,
+                        labels: document.getElementById('color-labels').value,
+                        countdownBg: document.getElementById('color-countdown-bg').value,
+                        title: document.getElementById('color-title').value
+                    };
+                    localStorage.setItem('customColors', JSON.stringify(colors));
+                    applyCustomColors(colors);
+                });
+            });
+
+            document.getElementById('reset-colors').onclick = function() {
+                const defaultColors = {
+                    bg: '#89f7fe',
+                    container: '#fff',
+                    numbers: '#66a6ff',
+                    labels: '#555555',
+                    countdownBg: '#f0f8ff',
+                    title: '#333'
+                };
+                localStorage.removeItem('customColors');
+                document.getElementById('color-bg').value = defaultColors.bg;
+                document.getElementById('color-container').value = defaultColors.container;
+                document.getElementById('color-numbers').value = defaultColors.numbers;
+                document.getElementById('color-labels').value = defaultColors.labels;
+                document.getElementById('color-countdown-bg').value = defaultColors.countdownBg;
+                document.getElementById('color-title').value = defaultColors.title;
+                applyCustomColors(defaultColors);
             };
-            localStorage.setItem('customColors', JSON.stringify(colors));
-            applyCustomColors(colors);
         });
-    });
-
-    document.getElementById('reset-colors').onclick = function() {
-        const defaultColors = {
-            bg: '#89f7fe',
-            container: '#fff',
-            numbers: '#66a6ff',
-            labels: '#555555',
-            countdownBg: '#f0f8ff',
-            title: '#333'
-        };
-        localStorage.removeItem('customColors');
-        document.getElementById('color-bg').value = defaultColors.bg;
-        document.getElementById('color-container').value = defaultColors.container;
-        document.getElementById('color-numbers').value = defaultColors.numbers;
-        document.getElementById('color-labels').value = defaultColors.labels;
-        document.getElementById('color-countdown-bg').value = defaultColors.countdownBg;
-        document.getElementById('color-title').value = defaultColors.title;
-        applyCustomColors(defaultColors);
-    };
 
     loadTimers(); // Load timers from storage
-    renderTimers();
+    await renderTimers();
     setupAllCountdowns();
+
+    // Defensive: check for null before setting onclick
+    const addBtn = document.getElementById('add-timer-btn');
+    if (addBtn) {
+        addBtn.onclick = function() {
+            timers.push({ name: 'Countdown Timer', end: '' });
+            saveTimers(); // Save after add
+            renderTimers();
+        };
+    }
+
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    if (saveEditBtn) {
+        saveEditBtn.onclick = function() {
+            if (editIndex !== null) {
+                timers[editIndex].name = document.getElementById('edit-timer-name').value || 'Countdown Timer';
+                timers[editIndex].end = document.getElementById('edit-date-picker').value;
+                saveTimers(); // Save after edit
+                renderTimers();
+                setupCountdownForTimer(editIndex);
+                closeEditModal();
+            }
+        };
+    }
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    if (cancelEditBtn) {
+        cancelEditBtn.onclick = closeEditModal;
+    }
+    const editModal = document.getElementById('edit-modal');
+    if (editModal) {
+        editModal.onclick = function(e) {
+            if (e.target === this) closeEditModal();
+        };
+    }
 });
 
 function applyCustomColors(colors) {
